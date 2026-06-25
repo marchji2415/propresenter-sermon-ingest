@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  sermon-ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sermon-ingest-app
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - PYTHON_PATH=python3
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - AI_PROVIDER=${AI_PROVIDER:-gemini}
+    volumes:
+      # Mount cache volume to persist Gemini scripture caches across container restarts
+      - sermon-ingest-cache:/app/cache
+    restart: unless-stopped
+
+volumes:
+  sermon-ingest-cache:

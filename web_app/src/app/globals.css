@@ -1,0 +1,858 @@
+/* ==========================================================================
+   Sermon Ingestion Engine — "Control Room" Design System
+   A multiviewer / broadcast-switcher aesthetic for the Sunday screens team:
+   dark rack-panel surfaces, tally-light category colors, monospace data
+   readouts, and a program-monitor treatment for slide previews.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'Helvetica Neue';
+  src: url('/fonts/helveticaneue.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  --font-display: 'Space Grotesk', 'Inter', -apple-system, system-ui, sans-serif;
+  --font-sans: 'Inter', -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Rack / Panel Surfaces */
+  --bg: #0a0c10;
+  --bg-soft: #0d0f15;
+  --bg-panel: #12151b;
+  --bg-panel-raised: #161a21;
+  --bg-recessed: #060708;
+  --bg-control: #1a1e26;
+
+  /* Hairlines & Seams */
+  --border: #232831;
+  --border-strong: #313742;
+  --border-faint: #1a1e26;
+
+  /* Text */
+  --text: #f1f3f6;
+  --text-secondary: #9aa3b2;
+  --text-muted: #6b7280;
+  --text-faint: #454c58;
+
+  /* Tally / Cue Colors — primary system accent */
+  --cue: #ff8a1e;
+  --cue-active: #e6760f;
+  --cue-glow: rgba(255, 138, 30, 0.35);
+
+  /* Status colors */
+  --status-live: #ff4438;
+  --status-ready: #34d399;
+  --status-standby: #6b7280;
+
+  /* Tally-light category palette (slide kinds / data viz) */
+  --tally-title: #ffb020;
+  --tally-scripture: #41d6ff;
+  --tally-point: #a78bfa;
+  --tally-quote: #ff6b57;
+  --tally-statement: #34d399;
+  --tally-media: #2dd4bf;
+
+  /* Radii — squared, technical */
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Spacing */
+  --spacing-xxs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 28px;
+  --spacing-xxl: 32px;
+
+  /* Shadows */
+  --shadow-recessed: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-cue: 0 0 0 1px rgba(255, 138, 30, 0.25), 0 4px 18px rgba(255, 138, 30, 0.18);
+}
+
+/* Base Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(255, 138, 30, 0.05) 0%, transparent 35%),
+    radial-gradient(circle at 100% 100%, rgba(65, 214, 255, 0.04) 0%, transparent 40%);
+  color: var(--text);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: var(--radius-xs);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+/* ==========================================================================
+   Header — Control Room Status Bar
+   ========================================================================== */
+.hero-band {
+  background-color: var(--bg-soft);
+  background-image: linear-gradient(180deg, #0d0f15 0%, #0a0c10 100%);
+  color: var(--text);
+  padding: 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.hero-band::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--cue) 0%, transparent 18%);
+  opacity: 0.6;
+}
+
+.hero-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .hero-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.25rem;
+  }
+}
+
+.logo-group h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  line-height: 1.1;
+}
+
+.logo-group h1 span:first-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--status-ready);
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15), 0 0 10px rgba(52, 211, 153, 0.6);
+  animation: tally-pulse 2.4s ease-in-out infinite;
+  font-size: 0;
+}
+
+.logo-group p {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-top: 0.45rem;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+@keyframes tally-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15), 0 0 10px rgba(52, 211, 153, 0.6); }
+  50% { box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.08), 0 0 4px rgba(52, 211, 153, 0.4); }
+}
+
+/* Container limits */
+.app-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+}
+
+/* Dashboard 2-column Layout */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Panel base — rack-mount module look
+   ========================================================================== */
+.glass-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-panel);
+  transition: border-color 0.2s ease;
+}
+
+.glass-panel.glowing {
+  border-color: var(--border);
+  position: sticky;
+  top: 1.5rem;
+}
+
+/* Form Settings Styling */
+.config-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.85rem;
+}
+
+.config-title span {
+  color: var(--cue);
+  font-size: 0.9rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.55rem;
+}
+
+.input-control, .select-control {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  background: var(--bg-control);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xs);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  box-shadow: var(--shadow-recessed);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.select-control {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+                     linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) center, calc(100% - 13px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.input-control::placeholder {
+  color: var(--text-faint);
+}
+
+.input-control:focus, .select-control:focus {
+  border-color: var(--cue);
+  box-shadow: var(--shadow-recessed), 0 0 0 3px rgba(255, 138, 30, 0.12);
+}
+
+/* Styled File Upload Dropzone */
+.dropzone-container {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 1.85rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  background: var(--bg-recessed);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.dropzone-container:hover {
+  border-color: var(--cue);
+  background: rgba(255, 138, 30, 0.04);
+}
+
+.dropzone-container.active {
+  border-color: var(--cue);
+  border-style: solid;
+  background: rgba(255, 138, 30, 0.07);
+}
+
+.dropzone-icon {
+  font-size: 1.9rem;
+  margin-bottom: 0.65rem;
+  display: inline-block;
+  filter: grayscale(0.3);
+}
+
+.dropzone-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.dropzone-highlight {
+  color: var(--cue);
+  font-weight: 600;
+}
+
+.file-selected-badge {
+  background: var(--bg-control);
+  border: 1px solid var(--border-strong);
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-xs);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+.file-selected-badge button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.file-selected-badge button:hover {
+  color: var(--status-live);
+}
+
+/* ==========================================================================
+   Toggle Switches — rocker switch with LED tell-tale
+   ========================================================================== */
+.toggle-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-recessed);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--border);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-control);
+  border: 1px solid var(--border-strong);
+  transition: .2s;
+  border-radius: var(--radius-full);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 2px;
+  background-color: var(--text-faint);
+  transition: .2s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: rgba(255, 138, 30, 0.15);
+  border-color: var(--cue);
+}
+
+input:checked + .slider:before {
+  transform: translateX(18px);
+  background-color: var(--cue);
+  box-shadow: 0 0 8px rgba(255, 138, 30, 0.7);
+}
+
+/* ==========================================================================
+   Buttons — cue / tally controls
+   ========================================================================== */
+.btn-primary {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  border: 1px solid var(--cue-active);
+  border-radius: var(--radius-sm);
+  background-color: var(--cue);
+  color: #1a0e02;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--shadow-cue);
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  text-align: center;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #ffa64a;
+  box-shadow: 0 0 0 1px rgba(255, 138, 30, 0.4), 0 6px 22px rgba(255, 138, 30, 0.3);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  background-color: var(--bg-control);
+  border-color: var(--border-strong);
+  color: var(--text-faint);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Secondary CTA / Download Button */
+.btn-download {
+  padding: 0.6rem 1.25rem;
+  background-color: var(--bg-control);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-download:hover {
+  border-color: var(--cue);
+  color: var(--cue);
+}
+
+.btn-download:active {
+  transform: scale(0.98);
+}
+
+/* ==========================================================================
+   Tabs — switcher button row
+   ========================================================================== */
+.tabs-navigation {
+  display: flex;
+  gap: 0.3rem;
+  background: var(--bg-recessed);
+  padding: 0.3rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  align-self: flex-start;
+}
+
+.tab-btn {
+  padding: 0.5rem 1.1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tab-btn.active {
+  color: #1a0e02;
+  background: var(--cue);
+}
+
+/* ==========================================================================
+   Results section: empty / loading / error states
+   ========================================================================== */
+.dashboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4.5rem 2rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+}
+
+.dashboard-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.dashboard-empty h3, .loading-container h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+/* Status Banner top overlay */
+.status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border);
+  padding: 1.1rem 1.5rem;
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-badge {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--status-ready);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-ready);
+  box-shadow: 0 0 6px var(--status-ready);
+}
+
+/* main container results layout */
+.main-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ==========================================================================
+   Program Monitor — slide preview grid (signature element)
+   ========================================================================== */
+.slides-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1.25rem;
+}
+
+.slide-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.slide-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+}
+
+/* Tally-light top border, keyed to slide kind */
+.slide-card.title-slide { border-top: 3px solid var(--tally-title); }
+.slide-card.scripture-slide { border-top: 3px solid var(--tally-scripture); }
+.slide-card.point-slide { border-top: 3px solid var(--tally-point); }
+.slide-card.quote-slide { border-top: 3px solid var(--tally-quote); }
+.slide-card.sermon_statement-slide { border-top: 3px solid var(--tally-statement); }
+.slide-card.media_note-slide { border-top: 3px solid var(--tally-media); }
+
+.slide-header {
+  padding: 0.6rem 0.85rem;
+  background: var(--bg-panel-raised);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slide-number {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.slide-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Badge colors matching tally palette */
+.slide-badge.title { background: rgba(255, 176, 32, 0.12); color: var(--tally-title); }
+.slide-badge.scripture { background: rgba(65, 214, 255, 0.12); color: var(--tally-scripture); }
+.slide-badge.point { background: rgba(167, 139, 250, 0.14); color: var(--tally-point); }
+.slide-badge.quote { background: rgba(255, 107, 87, 0.12); color: var(--tally-quote); }
+.slide-badge.sermon_statement { background: rgba(52, 211, 153, 0.12); color: var(--tally-statement); }
+.slide-badge.media_note { background: rgba(45, 212, 191, 0.12); color: var(--tally-media); }
+
+/* Dynamic Card Previews Aspect ratio */
+.theme-midtown .slide-card {
+  --slide-aspect: 16 / 9;
+}
+
+.theme-downtown .slide-card {
+  --slide-aspect: 7 / 9;
+}
+
+/* The "program monitor" screen itself: black viewport + faint scanline texture */
+.slide-body-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--slide-aspect, 16 / 9);
+  background-color: #060606;
+  background-image:
+    repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.018) 0px, rgba(255, 255, 255, 0.018) 1px, transparent 1px, transparent 3px),
+    radial-gradient(ellipse at center, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.slide-body-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+.slide-text-preview {
+  text-align: center;
+  color: #f4f4f5;
+  font-weight: 600;
+  line-height: 1.35;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-family: var(--font-sans);
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.08);
+}
+
+/* Adapt typography details inside cards */
+.theme-midtown .slide-text-preview {
+  font-family: 'Helvetica Neue', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  padding: 0 13.5%;
+}
+
+.theme-downtown .slide-text-preview {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  padding: 0 10.5%;
+}
+
+.slide-footer {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.74rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Media / Creative checklist — shot-list styling
+   ========================================================================== */
+.media-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.media-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  transition: border-color 0.15s ease;
+}
+
+.media-card:hover {
+  border-color: var(--border-strong);
+}
+
+.media-checkbox {
+  margin-top: 0.25rem;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--cue);
+}
+
+.media-content {
+  flex: 1;
+}
+
+.media-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+  margin-bottom: 0.25rem;
+}
+
+.media-desc {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+/* ==========================================================================
+   Compiler logs — terminal feed
+   ========================================================================== */
+.log-panel {
+  background: var(--bg-recessed);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: #a0aec0;
+  max-height: 350px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-recessed);
+}
+
+.log-entry {
+  margin-bottom: 0.35rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.log-entry.success { color: var(--status-ready); }
+.log-entry.info { color: var(--tally-scripture); }
+.log-entry.error { color: var(--status-live); }
+.log-entry.warning { color: var(--tally-title); }
+
+/* ==========================================================================
+   Loading state
+   ========================================================================== */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4.5rem 2rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-strong);
+  border-top-color: var(--cue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 0 16px rgba(255, 138, 30, 0.25);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

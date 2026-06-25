@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+web_app/node_modules
+
+# Next.js Build Outputs & Temp files
+web_app/.next
+web_app/tmp
+web_app/out
+
+# Python cache & compiler outputs
+__pycache__
+cache
+*/__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+
+# Environment / Local configuration
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git & Agent Workspace data
+.git
+.gitignore
+.agents
+.gemini
+AGENTS.md
+CLAUDE.md
+
+# Local scratch files & compilations
+test.pro
+test.json
+scratch/
+walkthrough.md
+implementation_plan.md
+task.md
